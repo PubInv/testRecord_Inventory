@@ -47,6 +47,23 @@ body {
   box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
 
+/* Active nav button (current page) */
+.nav-btn.active {
+  background: #2f6feb;
+  color: #ffffff;
+  border-color: #2f6feb;
+  cursor: default;
+  box-shadow: none;
+  pointer-events: none; /* makes it unclickable */
+}
+
+.nav-btn.active:hover,
+.nav-btn.active:active {
+  background: #2f6feb;
+  transform: none;
+  box-shadow: none;
+}
+
 h1 {
   text-align: center;
   margin: 1.5rem 0 1rem;
