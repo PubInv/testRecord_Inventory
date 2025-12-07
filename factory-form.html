@@ -2,27 +2,25 @@
 <html>
 <head>
   <meta charset="UTF-8">
+  <title>Krake Testing Register</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<!-- <h1>Krake Factory Test Log</h1> -->
-<p style="text-align:center; margin-top:-0.3rem; margin-bottom:1rem;">
- 
+  <h1>Krake Testing Register</h1>
+
   <nav class="top-nav">
-  <a href="factory-form.html" class="nav-btn active" aria-current="page">Krake Testing Register</a>
-  <a href="records.html" class="nav-btn">Inventory</a>
-  <a href="board.html" class="nav-btn">Board Record</a>
-  <!-- <a href="all-tables.html" class="nav-btn">Data Base</a> -->
+    <a href="factory-form.html" class="nav-btn active" aria-current="page">Krake Testing Register</a>
+    <a href="records.html" class="nav-btn">Inventory</a>
+    <a href="board.html" class="nav-btn">Board Record</a>
+    <!-- <a href="all-tables.html" class="nav-btn">Data Base</a> -->
+  </nav>
 
-</nav>
-
-  
   <form id="test-form">
     <!-- BOARD INFO -->
     <fieldset>
       <legend>Board Information</legend>
 
-      <label>Serial Number (serial_number):
+      <label>Serial Number:
         <input type="text" id="serial_number" required>
       </label><br>
 
@@ -57,6 +55,11 @@
       <label>Assembled By:
         <input type="text" id="assembled_by">
       </label><br>
+
+      <label>GDT Image:
+        <input type="file" id="gdt_file" accept="image/*">
+      </label><br>
+      <small>(Optional) Upload drawing/photo for this board. Stored in Supabase Storage.</small>
     </fieldset>
 
     <br>
@@ -221,8 +224,6 @@
   <!-- Supabase JS client via CDN -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script>
-    // ⚠️ REPLACE THESE TWO LINES with your actual values
-    // From Supabase dashboard: Settings → API → Project URL + anon public key
     const SUPABASE_URL = 'https://bkonmvhzzlbrbtnvlfcr.supabase.co'
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJrb25tdmh6emxicmJ0bnZsZmNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyMjUxNjIsImV4cCI6MjA3ODgwMTE2Mn0.yrg1t-aHWuwVEVcUVJ4-sbz1BNSspc7c5tBSQ3APTAg'
 
@@ -250,6 +251,41 @@
       const lab                = document.getElementById('lab').value.trim()
       const date_assembled     = document.getElementById('date_assembled').value || null
       const assembled_by       = document.getElementById('assembled_by').value.trim()
+
+      // --- GDT FILE UPLOAD (optional) ---
+      const gdtFileInput = document.getElementById('gdt_file')
+      const file = gdtFileInput.files[0]
+
+      let gdt_key = null
+      let gdt_url = null
+
+      if (file) {
+        try {
+          gdt_key = `${serial_number || 'unknown'}/gdt-${Date.now()}-${file.name}`
+
+          // Upload to Storage bucket "gdt-images"
+          const { data: uploadData, error: uploadError } = await db.storage
+            .from('gdt-images')   // bucket name
+            .upload(gdt_key, file)
+
+          if (uploadError) {
+            console.error(uploadError)
+            statusEl.textContent = 'Error uploading GDT image: ' + uploadError.message
+            return
+          }
+
+          // Get public URL
+          const { data: publicData } = db.storage
+            .from('gdt-images')
+            .getPublicUrl(gdt_key)
+
+          gdt_url = publicData.publicUrl
+        } catch (err) {
+          console.error(err)
+          statusEl.textContent = 'Unexpected error uploading GDT image: ' + err.message
+          return
+        }
+      }
 
       // --- TEST RUN FIELDS ---
       const test_location      = document.getElementById('test_location').value
@@ -300,7 +336,9 @@
               country,
               lab,
               date_assembled,
-              assembled_by
+              assembled_by,
+              gdt_key,
+              gdt_url
             },
             { onConflict: 'serial_number' }
           )
@@ -387,6 +425,7 @@
 
         statusEl.textContent = '✅ All data saved!'
         form.reset()
+
       } catch (err) {
         console.error(err)
         statusEl.textContent = 'Unexpected error: ' + err.message
