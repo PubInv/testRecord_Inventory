@@ -8,6 +8,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.use(express.static('public'));
+
 // ---------- MySQL CONFIG ----------
 const pool = mysql.createPool({
   host: '127.0.0.1',
@@ -60,7 +62,8 @@ async function getOrCreateBoard(conn, board) {
       board.lab || null,
       board.status || null,
       board.gdt_key || null,
-      board.gdt_url || null
+      board.gdt_url || null,
+      board.notes || null
     ]
   );
 
