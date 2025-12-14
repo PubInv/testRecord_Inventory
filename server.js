@@ -1,128 +1,54 @@
-// server.js
-// Node/Express API for Railway + MySQL (Railway env vars)
-// Works with variables like:
-// MYSQLHOST, MYSQLPORT, MYSQLUSER, MYSQLPASSWORD, MYSQLDATABASE
-//
-// Endpoints:
-//   GET  /health
-//   GET  /db-test
-//   GET  /api/test-runs
-//   GET  /api/board/:serial
-//   POST /api/test-runs   (JSON body)  -> creates board + test_run (minimal)
+// server.js – Krake factory API, using MySQL and port 4000
 
-const express = require("express");
-const mysql = require("mysql2/promise");
+const express = require('express');
+const cors = require('cors');
+const mysql = require('mysql2/promise');
 
 const app = express();
+app.use(cors());
+app.use(express.json());
 
-// ====== Config ======
-const PORT = Number(process.env.PORT || 3000);
-
-function env(name, fallback) {
-  const v = process.env[name] ?? fallback;
-  if (v === undefined || v === null || v === "") {
-    throw new Error(`Missing required env var: ${name}`);
-  }
-  return v;
-}
-
-const DB_HOST = env("MYSQLHOST");
-const DB_PORT = Number(env("MYSQLPORT", "3306"));
-const DB_USER = env("MYSQLUSER");
-const DB_PASS = env("MYSQLPASSWORD");
-const DB_NAME = env("MYSQLDATABASE");
-
-// ====== Middleware ======
-app.use(express.json({ limit: "5mb" })); // JSON only for now
-// If you host the frontend from the same server later, you can add:
-// app.use(express.static("public"));
-
-// ====== MySQL Pool ======
+// ---------- MySQL CONFIG ----------
 const pool = mysql.createPool({
-  host: DB_HOST,
-  port: DB_PORT,
-  user: DB_USER,
-  password: DB_PASS,
-  database: DB_NAME,
+  host: '127.0.0.1',
+  port: 3306,
+  user: 'root',                 // change if needed
+  password: 'N@jh@M..2429', // TODO: put your real password
+  database: 'krake_factory',    // change if your DB name is different
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0,
+  queueLimit: 0
 });
 
-// ====== Basic endpoints ======
-app.get("/health", (req, res) => res.json({ ok: true }));
-
-app.get("/db-test", async (req, res) => {
-  const [rows] = await pool.query("SELECT NOW() AS now, DATABASE() AS db");
-  res.json(rows[0]);
-});
-
-// ====== Helpers ======
-async function ensureSchema() {
-  // Minimal schema that satisfies your existing pages:
-  // boards + test_runs
-  // (You can add powered/unpowered and photo tables later.)
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS boards (
-      board_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-      serial_number VARCHAR(64) NOT NULL UNIQUE,
-      hardware_rev VARCHAR(64),
-      pcb_rev VARCHAR(64),
-      batch VARCHAR(64),
-      date_assembled DATE,
-      assembled_by VARCHAR(128),
-      country VARCHAR(64),
-      lab VARCHAR(128),
-      status VARCHAR(32),
-      gdt_key VARCHAR(128),
-      gdt_url TEXT,
-      notes TEXT,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB;
-  `);
-
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS test_runs (
-      testrun_id BIGINT AUTO_INCREMENT PRIMARY KEY,
-      board_id BIGINT NOT NULL,
-      test_datetime TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      test_location VARCHAR(64),
-      tester VARCHAR(128) NOT NULL,
-      firmware_version VARCHAR(64),
-      test_fixture_version VARCHAR(64),
-      overall_result VARCHAR(16),
-      comments TEXT,
-      FOREIGN KEY (board_id) REFERENCES boards(board_id) ON DELETE CASCADE,
-      INDEX (board_id)
-    ) ENGINE=InnoDB;
-  `);
+async function getConn() {
+  return pool.getConnection();
 }
 
-async function upsertBoardBySerial(board) {
-  const serial = board.serial_number?.trim();
-  if (!serial) throw new Error("serial_number is required");
+// ---------- HELPERS ----------
 
-  // Insert if missing; update if exists
-  await pool.query(
-    `
-    INSERT INTO boards
-      (serial_number, hardware_rev, pcb_rev, batch, date_assembled, assembled_by, country, lab, status, gdt_key, gdt_url, notes)
-    VALUES
-      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ON DUPLICATE KEY UPDATE
-      hardware_rev=VALUES(hardware_rev),
-      pcb_rev=VALUES(pcb_rev),
-      batch=VALUES(batch),
-      date_assembled=VALUES(date_assembled),
-      assembled_by=VALUES(assembled_by),
-      country=VALUES(country),
-      lab=VALUES(lab),
-      status=VALUES(status),
-      gdt_key=VALUES(gdt_key),
-      gdt_url=VALUES(gdt_url),
-      notes=VALUES(notes)
-    `,
+// Find a board by serial_number, or create it if it doesn't exist
+async function getOrCreateBoard(conn, board) {
+  const serial = (board.serial_number || '').trim();
+  if (!serial) {
+    throw new Error('serial_number is required');
+  }
+
+  // 1) Try existing
+  const [existing] = await conn.query(
+    'SELECT board_id FROM boards WHERE serial_number = ?',
+    [serial]
+  );
+  if (existing.length) {
+    return existing[0].board_id;
+  }
+
+  // 2) Insert new
+  const [result] = await conn.query(
+    `INSERT INTO boards
+       (serial_number, hardware_rev, pcb_rev, batch,
+        date_assembled, assembled_by, country, lab,
+        status, gdt_key, gdt_url, notes)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       serial,
       board.hardware_rev || null,
@@ -134,119 +60,222 @@ async function upsertBoardBySerial(board) {
       board.lab || null,
       board.status || null,
       board.gdt_key || null,
-      board.gdt_url || null,
-      board.notes || null,
+      board.gdt_url || null
     ]
   );
 
-  const [rows] = await pool.query(
-    `SELECT board_id, serial_number FROM boards WHERE serial_number = ? LIMIT 1`,
-    [serial]
-  );
-  return rows[0];
+  return result.insertId;
 }
 
-// ====== API endpoints expected by your UI ======
+// ---------- ROUTES ----------
 
-// records.html expects list of runs
-app.get("/api/test-runs", async (req, res) => {
-  // Returns a list; shape can be adjusted to match your UI exactly
-  const [rows] = await pool.query(`
-    SELECT
-      tr.testrun_id,
-      b.serial_number,
-      tr.test_datetime,
-      tr.tester,
-      tr.firmware_version,
-      tr.test_fixture_version,
-      tr.overall_result,
-      tr.comments
-    FROM test_runs tr
-    JOIN boards b ON b.board_id = tr.board_id
-    ORDER BY tr.test_datetime DESC
-    LIMIT 500
-  `);
-  res.json({ ok: true, runs: rows });
-});
-
-// board.html expects board details + its runs
-app.get("/api/board/:serial", async (req, res) => {
-  const serial = (req.params.serial || "").trim();
-  if (!serial) return res.status(400).json({ ok: false, error: "serial required" });
-
-  const [boards] = await pool.query(
-    `SELECT * FROM boards WHERE serial_number = ? LIMIT 1`,
-    [serial]
-  );
-  if (boards.length === 0) return res.status(404).json({ ok: false, error: "not found" });
-
-  const board = boards[0];
-
-  const [runs] = await pool.query(
-    `
-    SELECT
-      testrun_id, test_datetime, tester, firmware_version, test_fixture_version, overall_result, comments
-    FROM test_runs
-    WHERE board_id = ?
-    ORDER BY test_datetime DESC
-    `,
-    [board.board_id]
-  );
-
-  res.json({ ok: true, board, runs });
-});
-
-// factory-form.html will POST here (JSON for now)
-app.post("/api/test-runs", async (req, res) => {
+// Simple ping to confirm Node <-> MySQL works
+app.get('/api/ping', async (req, res) => {
+  let conn;
   try {
-    // Accept a flexible body:
-    // {
-    //   board: { serial_number, hardware_rev, pcb_rev, ..., gdt_key, gdt_url, notes },
-    //   run:   { tester, firmware_version, test_fixture_version, overall_result, comments, test_location }
-    // }
-    const { board, run } = req.body || {};
-    if (!board || !run) {
-      return res.status(400).json({ ok: false, error: "Body must include { board, run }" });
-    }
-    if (!run.tester) {
-      return res.status(400).json({ ok: false, error: "run.tester is required" });
-    }
-
-    const b = await upsertBoardBySerial(board);
-
-    const [result] = await pool.query(
-      `
-      INSERT INTO test_runs
-        (board_id, test_location, tester, firmware_version, test_fixture_version, overall_result, comments)
-      VALUES
-        (?, ?, ?, ?, ?, ?, ?)
-      `,
-      [
-        b.board_id,
-        run.test_location || null,
-        run.tester,
-        run.firmware_version || null,
-        run.test_fixture_version || null,
-        run.overall_result || null,
-        run.comments || null,
-      ]
-    );
-
-    res.json({ ok: true, testrun_id: result.insertId, board_id: b.board_id });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ ok: false, error: e.message || "server error" });
+    conn = await getConn();
+    const [rows] = await conn.query('SELECT 1 AS ok');
+    res.json({ ok: true, db: rows[0].ok });
+  } catch (err) {
+    console.error('PING error:', err);
+    res.status(500).json({ ok: false, error: err.message });
+  } finally {
+    if (conn) conn.release();
   }
 });
 
-// ====== Start ======
-(async () => {
-  await ensureSchema();
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`API listening on port ${PORT}`);
-    console.log(`DB: ${DB_USER}@${DB_HOST}:${DB_PORT}/${DB_NAME}`);
-  });
-})().catch((e) => {
-  console.error("Startup failed:", e);
-  process.exit(1);
+// POST /api/test-run  -> save board + test_runs + unpowered + powered
+app.post('/api/test-run', async (req, res) => {
+  const { board, test_run, unpowered, powered } = req.body || {};
+
+  let conn;
+  try {
+    conn = await getConn();
+    await conn.beginTransaction();
+
+    // 1) board
+    const boardId = await getOrCreateBoard(conn, board || {});
+
+    // 2) test_runs
+    const tr = test_run || {};
+    const [runResult] = await conn.query(
+      `INSERT INTO test_runs
+         (board_id, test_location, tester,
+          firmware_version, test_fixture_version,
+          overall_result, comments)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        boardId,
+        tr.test_location || null,
+        tr.tester || null,
+        tr.firmware_version || null,
+        tr.test_fixture_version || null,
+        tr.overall_result || null,
+        tr.comments || null
+      ]
+    );
+    const testrunId = runResult.insertId;
+
+    // 3) unpowered_results
+    if (unpowered) {
+      const u = unpowered;
+      await conn.query(
+        `INSERT INTO unpowered_results
+           (testrun_id,
+            meter_make, meter_model, meter_sn,
+            res_tp102_tp101_vin, res_tp103_tp101_5v,
+            res_tp201_tp101_vbus, res_tp202_tp101_v3,
+            res_j103pin2_tp101_ctrl_vcc,
+            pass_fail, notes)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          testrunId,
+          u.meter_make || null,
+          u.meter_model || null,
+          u.meter_sn || null,
+          u.res_tp102_tp101_vin || null,
+          u.res_tp103_tp101_5v || null,
+          u.res_tp201_tp101_vbus || null,
+          u.res_tp202_tp101_v3 || null,
+          u.res_j103pin2_tp101_ctrl_vcc || null,
+          u.pass_fail || null,
+          u.notes || null
+        ]
+      );
+    }
+
+    // 4) powered_results
+    if (powered) {
+      const p = powered;
+      await conn.query(
+        `INSERT INTO powered_results
+           (testrun_id,
+            supply_current_ma, vin_tp102_v, v5_tp103_v,
+            v5_esp32_u103_v, v3p3_tab_u103_v, v3_tp202_u501_v,
+            v3v3_ctrl_d103k_v, vcclcd_tp401_v, v5_dfp_c505_v,
+            v_charge_pump_plus_v, v_charge_pump_minus_v,
+            pass_fail, notes)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          testrunId,
+          p.supply_current_ma ?? null,
+          p.vin_tp102_v ?? null,
+          p.v5_tp103_v ?? null,
+          p.v5_esp32_u103_v ?? null,
+          p.v3p3_tab_u103_v ?? null,
+          p.v3_tp202_u501_v ?? null,
+          p.v3v3_ctrl_d103k_v ?? null,
+          p.vcclcd_tp401_v ?? null,
+          p.v5_dfp_c505_v ?? null,
+          p.v_charge_pump_plus_v ?? null,
+          p.v_charge_pump_minus_v ?? null,
+          p.pass_fail || null,
+          p.notes || null
+        ]
+      );
+    }
+
+    await conn.commit();
+    res.json({
+      message: 'Test run saved',
+      board_id: boardId,
+      testrun_id: testrunId
+    });
+  } catch (err) {
+    if (conn) {
+      try { await conn.rollback(); } catch (_) {}
+    }
+    console.error('POST /api/test-run error:', err);
+    res.status(500).json({ error: err.message });
+  } finally {
+    if (conn) conn.release();
+  }
+});
+
+// GET /api/test-runs – summary for inventory page
+app.get('/api/test-runs', async (req, res) => {
+  let conn;
+  try {
+    conn = await getConn();
+    const [rows] = await conn.query(
+      `SELECT
+         b.serial_number,
+         b.country,
+         b.lab,
+         tr.test_datetime,
+         tr.test_location,
+         tr.tester,
+         tr.firmware_version,
+         tr.overall_result
+       FROM test_runs tr
+       JOIN boards b ON tr.board_id = b.board_id
+       ORDER BY tr.test_datetime DESC`
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('GET /api/test-runs error:', err);
+    res.status(500).json({ error: err.message });
+  } finally {
+    if (conn) conn.release();
+  }
+});
+
+// GET /api/board/:serial – board + runs + measurements
+app.get('/api/board/:serial', async (req, res) => {
+  const serial = (req.params.serial || '').trim();
+  if (!serial) {
+    return res.status(400).json({ error: 'Serial is required' });
+  }
+
+  let conn;
+  try {
+    conn = await getConn();
+
+    // Board
+    const [boardRows] = await conn.query(
+      'SELECT * FROM boards WHERE serial_number = ?',
+      [serial]
+    );
+    if (!boardRows.length) {
+      return res.json({ board: null, test_runs: [] });
+    }
+    const board = boardRows[0];
+
+    // Runs for that board
+    const [runs] = await conn.query(
+      'SELECT * FROM test_runs WHERE board_id = ? ORDER BY test_datetime DESC',
+      [board.board_id]
+    );
+
+    const detailedRuns = [];
+    for (const run of runs) {
+      const [unpRows] = await conn.query(
+        'SELECT * FROM unpowered_results WHERE testrun_id = ?',
+        [run.testrun_id]
+      );
+      const [powRows] = await conn.query(
+        'SELECT * FROM powered_results WHERE testrun_id = ?',
+        [run.testrun_id]
+      );
+
+      detailedRuns.push({
+        ...run,
+        unpowered_results: unpRows,
+        powered_results: powRows
+      });
+    }
+
+    res.json({ board, test_runs: detailedRuns });
+  } catch (err) {
+    console.error('GET /api/board/:serial error:', err);
+    res.status(500).json({ error: err.message });
+  } finally {
+    if (conn) conn.release();
+  }
+});
+
+// ---------- START SERVER ----------
+const PORT = 4000;
+app.listen(PORT, () => {
+  console.log(`API server listening on http://localhost:${PORT}`);
 });
