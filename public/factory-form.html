@@ -7,355 +7,308 @@
 <body>
 <!-- <h1>Krake Factory Test Log</h1> -->
 <p style="text-align:center; margin-top:-0.3rem; margin-bottom:1rem;">
- 
-  <nav class="top-nav">
-    <a href="factory-form.html" class="nav-btn active" aria-current="page">Krake Testing Register</a>
-    <a href="records.html" class="nav-btn">Inventory</a>
-    <a href="board.html" class="nav-btn">Board Record</a>
-    <!-- <a href="all-tables.html" class="nav-btn">Data Base</a> -->
-  </nav>
+  <small>
+    Board / Krake Cousins:
+    <a href="factory-form.html" class="nav-link">Krake Testing</a> |
+    <a href="records.html" class="nav-link">Inventory &amp; History</a> |
+    <a href="labels.html" class="nav-link">QR Label from Image</a>
+  </small>
+</p>
 
-  <form id="test-form">
-    <!-- BOARD INFO -->
+<div class="board-container">
+  <h2>Board / Device Info</h2>
+  <form id="testForm">
     <fieldset>
-      <legend>Board Information</legend>
-
-      <label>Serial Number (serial_number):
-        <input type="text" id="serial_number" required>
-      </label><br>
-
-      <label>Hardware Rev:
-        <input type="text" id="hardware_rev" placeholder="e.g. Rev 2.0">
-      </label><br>
-
-      <label>PCB Rev:
-        <input type="text" id="pcb_rev" placeholder="e.g. PCB Rev B">
-      </label><br>
-
-      <label>Batch:
-        <input type="text" id="batch" placeholder="e.g. LB-2025-01">
-      </label><br>
-
-      <label>Date Assembled:
-        <input type="date" id="date_assembled">
-      </label><br>
-
-      <label>Assembled By:
-        <input type="text" id="assembled_by" placeholder="Technician name">
-      </label><br>
-
-      <label>Country:
-        <select id="country">
-          <option value="Lebanon">Lebanon</option>
-          <option value="UK">UK</option>
-          <option value="US">US</option>
-          <option value="Other">Other</option>
-        </select>
-      </label><br>
-
-      <label>Lab:
-        <input type="text" id="lab" placeholder="e.g. Beirut Lab, London Lab">
-      </label><br>
-
-      <label>GDT Key:
-        <input type="text" id="gdt_key" placeholder="GDT key">
-      </label><br>
-
-      <label>GDT URL:
-        <input type="url" id="gdt_url" placeholder="https://example.com/...">
-      </label><br>
+      <legend>Basic Board Details</legend>
+      <label>
+        Serial Number *
+        <input type="text" name="serial_number" required />
+      </label>
+      <label>
+        Hardware Rev
+        <input type="text" name="hardware_rev" />
+      </label>
+      <label>
+        PCB Rev
+        <input type="text" name="pcb_rev" />
+      </label>
+      <label>
+        Batch
+        <input type="text" name="batch" />
+      </label>
+      <label>
+        Date Assembled
+        <input type="date" name="date_assembled" />
+      </label>
+      <label>
+        Assembled By
+        <input type="text" name="assembled_by" />
+      </label>
+      <label>
+        Country
+        <input type="text" name="country" />
+      </label>
+      <label>
+        Lab
+        <input type="text" name="lab" />
+      </label>
+      <label>
+        Status
+        <input type="text" name="status" placeholder="IN_STOCK / IN_TEST / SHIPPED / REWORK" />
+      </label>
+      <label>
+        GDT Key
+        <input type="text" name="gdt_key" />
+      </label>
+      <label>
+        GDT URL
+        <input type="url" name="gdt_url" />
+      </label>
+      <label>
+        Notes
+        <textarea name="notes"></textarea>
+      </label>
     </fieldset>
 
-    <br>
-
-    <!-- TEST RUN INFO -->
     <fieldset>
-      <legend>Test Run (General)</legend>
-
-      <label>Test Location:
-        <select id="test_location">
-          <option value="Lebanon">Lebanon</option>
-          <option value="UK">UK</option>
-          <option value="US">US</option>
+      <legend>Test Run Info</legend>
+      <label>
+        Test Location
+        <input type="text" name="test_location" placeholder="Lebanon / London / US" />
+      </label>
+      <label>
+        Tester
+        <input type="text" name="tester" />
+      </label>
+      <label>
+        Firmware Version
+        <input type="text" name="firmware_version" />
+      </label>
+      <label>
+        Test Fixture Version
+        <input type="text" name="test_fixture_version" />
+      </label>
+      <label>
+        Overall Result
+        <select name="overall_result">
+          <option value="">(select)</option>
+          <option value="PASS">PASS</option>
+          <option value="FAIL">FAIL</option>
+          <option value="REWORK">REWORK</option>
         </select>
-      </label><br>
-
-      <label>Tester:
-        <input type="text" id="tester" placeholder="Your name" required>
-      </label><br>
-
-      <label>Firmware Version:
-        <input type="text" id="firmware_version" placeholder="e.g. v1.2.3">
-      </label><br>
-
-      <label>Test Fixture Version:
-        <input type="text" id="test_fixture_version" placeholder="e.g. Jig v0.9">
-      </label><br>
-
-      <label>Overall Result:
-        <select id="overall_result">
-          <option>PASS</option>
-          <option>FAIL</option>
-          <option>REWORK</option>
-        </select>
-      </label><br>
-
-      <label>Comments:<br>
-        <textarea id="comments" rows="3" cols="40" placeholder="Any additional notes"></textarea>
-      </label><br>
+      </label>
+      <label>
+        Comments
+        <textarea name="comments"></textarea>
+      </label>
     </fieldset>
 
-    <br>
-
-    <!-- UNPOWERED MEASUREMENTS -->
     <fieldset>
       <legend>Unpowered Measurements</legend>
+      <label>
+        Meter Make
+        <input type="text" name="meter_make" />
+      </label>
+      <label>
+        Meter Model
+        <input type="text" name="meter_model" />
+      </label>
+      <label>
+        Meter Serial #
+        <input type="text" name="meter_sn" />
+      </label>
 
-      <label>Meter Make:
-        <input type="text" id="meter_make" placeholder="e.g. ASTRO /\\I">
-      </label><br>
-
-      <label>Meter Model:
-        <input type="text" id="meter_model" placeholder="e.g. DM6000AR">
-      </label><br>
-
-      <label>Meter S/N:
-        <input type="text" id="meter_sn" placeholder="e.g. 2327610969">
-      </label><br>
-
-      <label>Resistance TP102–TP101 (Vin):
-        <input type="text" id="res_tp102_tp101_vin" placeholder=">10Meg">
-      </label><br>
-
-      <label>Resistance TP103–TP101 (+5V):
-        <input type="text" id="res_tp103_tp101_5v" placeholder="1.1K Typical">
-      </label><br>
-
-      <label>Resistance TP201–TP101 (VBus):
-        <input type="text" id="res_tp201_tp101_vbus" placeholder="Open">
-      </label><br>
-
-      <label>Resistance TP202–TP101 (V3):
-        <input type="text" id="res_tp202_tp101_v3" placeholder="304 Ohm">
-      </label><br>
-
-      <label>Resistance J103 Pin2–TP101 (ControllerVcc):
-        <input type="text" id="res_j103pin2_tp101_ctrl_vcc" placeholder=">10Meg">
-      </label><br>
-
-      <label>Unpowered Test Result:
-        <select id="unpowered_pass_fail">
-          <option>PASS</option>
-          <option>FAIL</option>
+      <label>
+        RES TP102-TP101 Vin
+        <input type="text" name="res_tp102_tp101_vin" placeholder=">10Meg" />
+      </label>
+      <label>
+        RES TP103-TP101 5V
+        <input type="text" name="res_tp103_tp101_5v" />
+      </label>
+      <label>
+        RES TP201-TP101 VBUS
+        <input type="text" name="res_tp201_tp101_vbus" />
+      </label>
+      <label>
+        RES TP202-TP101 V3
+        <input type="text" name="res_tp202_tp101_v3" />
+      </label>
+      <label>
+        RES J103pin2-TP101 CTRL_VCC
+        <input type="text" name="res_j103pin2_tp101_ctrl_vcc" />
+      </label>
+      <label>
+        Pass / Fail
+        <select name="unpowered_pass_fail">
+          <option value="">(select)</option>
+          <option value="PASS">PASS</option>
+          <option value="FAIL">FAIL</option>
         </select>
-      </label><br>
-
-      <label>Unpowered Notes:<br>
-        <textarea id="unpowered_notes" rows="2" cols="40"></textarea>
-      </label><br>
+      </label>
+      <label>
+        Unpowered Notes
+        <textarea name="unpowered_notes"></textarea>
+      </label>
     </fieldset>
 
-    <br>
-
-    <!-- POWERED MEASUREMENTS -->
     <fieldset>
       <legend>Powered Measurements</legend>
-
-      <label>Supply Current (mA):
-        <input type="number" step="0.001" id="supply_current_ma" placeholder="147">
-      </label><br>
-
-      <label>TP102 Vin (V):
-        <input type="number" step="0.01" id="vin_tp102_v" placeholder="12.00">
-      </label><br>
-
-      <label>TP103 +5V (V):
-        <input type="number" step="0.01" id="v5_tp103_v" placeholder="5.00">
-      </label><br>
-
-      <label>+5esp32 into U103 (V):
-        <input type="number" step="0.01" id="v5_esp32_u103_v" placeholder="5.00">
-      </label><br>
-
-      <label>+3.3V Tab U103 (V):
-        <input type="number" step="0.01" id="v3p3_tab_u103_v" placeholder="3.30">
-      </label><br>
-
-      <label>TP202 V3 on U501 (V):
-        <input type="number" step="0.01" id="v3_tp202_u501_v" placeholder="3.00">
-      </label><br>
-
-      <label>D103 Cathode 3v3Controller (V):
-        <input type="number" step="0.01" id="v3v3_ctrl_d103k_v" placeholder="3.30">
-      </label><br>
-
-      <label>TP401 VccLCD (V):
-        <input type="number" step="0.01" id="vcclcd_tp401_v" placeholder="5.00">
-      </label><br>
-
-      <label>C505+ 5VDFP (V):
-        <input type="number" step="0.01" id="v5_dfp_c505_v" placeholder="5.00">
-      </label><br>
-
-      <label>ChargePump + (U701 Pin2) (V):
-        <input type="number" step="0.01" id="v_charge_pump_plus_v" placeholder="5.36">
-      </label><br>
-
-      <label>ChargePump - (U701 Pin6) (V):
-        <input type="number" step="0.01" id="v_charge_pump_minus_v" placeholder="-5.70">
-      </label><br>
-
-      <label>Powered Test Result:
-        <select id="powered_pass_fail">
-          <option>PASS</option>
-          <option>FAIL</option>
+      <label>
+        Supply Current (mA)
+        <input type="number" step="0.01" name="supply_current_ma" />
+      </label>
+      <label>
+        Vin TP102 (V)
+        <input type="number" step="0.001" name="vin_tp102_v" />
+      </label>
+      <label>
+        V5 TP103 (V)
+        <input type="number" step="0.001" name="v5_tp103_v" />
+      </label>
+      <label>
+        +5esp32 U103 (V)
+        <input type="number" step="0.001" name="v5_esp32_u103_v" />
+      </label>
+      <label>
+        3.3V Tab U103 (V)
+        <input type="number" step="0.001" name="v3p3_tab_u103_v" />
+      </label>
+      <label>
+        V3 TP202 U501 (V)
+        <input type="number" step="0.001" name="v3_tp202_u501_v" />
+      </label>
+      <label>
+        3v3 Controller D103K (V)
+        <input type="number" step="0.001" name="v3v3_ctrl_d103k_v" />
+      </label>
+      <label>
+        VccLCD TP401 (V)
+        <input type="number" step="0.001" name="vcclcd_tp401_v" />
+      </label>
+      <label>
+        5VDFP C505+ (V)
+        <input type="number" step="0.001" name="v5_dfp_c505_v" />
+      </label>
+      <label>
+        Charge Pump + (V)
+        <input type="number" step="0.001" name="v_charge_pump_plus_v" />
+      </label>
+      <label>
+        Charge Pump – (V)
+        <input type="number" step="0.001" name="v_charge_pump_minus_v" />
+      </label>
+      <label>
+        Powered Pass / Fail
+        <select name="powered_pass_fail">
+          <option value="">(select)</option>
+          <option value="PASS">PASS</option>
+          <option value="FAIL">FAIL</option>
         </select>
-      </label><br>
-
-      <label>Powered Notes:<br>
-        <textarea id="powered_notes" rows="2" cols="40"></textarea>
-      </label><br>
+      </label>
+      <label>
+        Powered Notes
+        <textarea name="powered_notes"></textarea>
+      </label>
     </fieldset>
 
-    <br>
-    <button type="submit">Save Test Run</button>
+    <div class="button-row">
+      <button type="submit">Save Test Run</button>
+      <span id="statusMsg" class="status-msg"></span>
+    </div>
   </form>
+</div>
 
-  <p id="status"></p>
+<script>
+  // Same origin as Node/nginx
+  const API_BASE = '';
 
-  <script>
-    const API_BASE = ''; // Node/Express API base
+  const form = document.getElementById('testForm');
+  const statusMsg = document.getElementById('statusMsg');
 
-    const form = document.getElementById('test-form');
-    const statusEl = document.getElementById('status');
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    statusMsg.textContent = 'Saving...';
 
-    function numOrNull(id) {
-      const v = document.getElementById(id).value.trim();
-      return v === '' ? null : Number(v);
-    }
+    const fd = new FormData(form);
 
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      statusEl.textContent = 'Saving...';
+    const board = {
+      serial_number: fd.get('serial_number'),
+      hardware_rev: fd.get('hardware_rev') || null,
+      pcb_rev: fd.get('pcb_rev') || null,
+      batch: fd.get('batch') || null,
+      date_assembled: fd.get('date_assembled') || null,
+      assembled_by: fd.get('assembled_by') || null,
+      country: fd.get('country') || null,
+      lab: fd.get('lab') || null,
+      status: fd.get('status') || null,
+      gdt_key: fd.get('gdt_key') || null,
+      gdt_url: fd.get('gdt_url') || null,
+      notes: fd.get('notes') || null
+    };
 
-      // --- BOARD FIELDS ---
-      const serial_number      = document.getElementById('serial_number').value.trim();
-      const hardware_rev       = document.getElementById('hardware_rev').value.trim();
-      const pcb_rev            = document.getElementById('pcb_rev').value.trim();
-      const batch              = document.getElementById('batch').value.trim();
-      const country            = document.getElementById('country').value;
-      const lab                = document.getElementById('lab').value.trim();
-      const date_assembled     = document.getElementById('date_assembled').value || null;
-      const assembled_by       = document.getElementById('assembled_by').value.trim();
-      const gdt_key            = document.getElementById('gdt_key').value.trim();
-      const gdt_url            = document.getElementById('gdt_url').value.trim();
+    const test_run = {
+      test_location: fd.get('test_location') || null,
+      tester: fd.get('tester') || null,
+      firmware_version: fd.get('firmware_version') || null,
+      test_fixture_version: fd.get('test_fixture_version') || null,
+      overall_result: fd.get('overall_result') || null,
+      comments: fd.get('comments') || null
+    };
 
-      // --- TEST RUN FIELDS ---
-      const test_location        = document.getElementById('test_location').value;
-      const tester               = document.getElementById('tester').value.trim();
-      const firmware_version     = document.getElementById('firmware_version').value.trim();
-      const test_fixture_version = document.getElementById('test_fixture_version').value.trim();
-      const overall_result       = document.getElementById('overall_result').value;
-      const comments             = document.getElementById('comments').value.trim();
+    const unpowered = {
+      meter_make: fd.get('meter_make') || null,
+      meter_model: fd.get('meter_model') || null,
+      meter_sn: fd.get('meter_sn') || null,
+      res_tp102_tp101_vin: fd.get('res_tp102_tp101_vin') || null,
+      res_tp103_tp101_5v: fd.get('res_tp103_tp101_5v') || null,
+      res_tp201_tp101_vbus: fd.get('res_tp201_tp101_vbus') || null,
+      res_tp202_tp101_v3: fd.get('res_tp202_tp101_v3') || null,
+      res_j103pin2_tp101_ctrl_vcc: fd.get('res_j103pin2_tp101_ctrl_vcc') || null,
+      pass_fail: fd.get('unpowered_pass_fail') || null,
+      notes: fd.get('unpowered_notes') || null
+    };
 
-      // --- UNPOWERED FIELDS ---
-      const meter_make         = document.getElementById('meter_make').value.trim();
-      const meter_model        = document.getElementById('meter_model').value.trim();
-      const meter_sn           = document.getElementById('meter_sn').value.trim();
+    const powered = {
+      supply_current_ma: fd.get('supply_current_ma') || null,
+      vin_tp102_v: fd.get('vin_tp102_v') || null,
+      v5_tp103_v: fd.get('v5_tp103_v') || null,
+      v5_esp32_u103_v: fd.get('v5_esp32_u103_v') || null,
+      v3p3_tab_u103_v: fd.get('v3p3_tab_u103_v') || null,
+      v3_tp202_u501_v: fd.get('v3_tp202_u501_v') || null,
+      v3v3_ctrl_d103k_v: fd.get('v3v3_ctrl_d103k_v') || null,
+      vcclcd_tp401_v: fd.get('vcclcd_tp401_v') || null,
+      v5_dfp_c505_v: fd.get('v5_dfp_c505_v') || null,
+      v_charge_pump_plus_v: fd.get('v_charge_pump_plus_v') || null,
+      v_charge_pump_minus_v: fd.get('v_charge_pump_minus_v') || null,
+      pass_fail: fd.get('powered_pass_fail') || null,
+      notes: fd.get('powered_notes') || null
+    };
 
-      const res_tp102_tp101_vin         = document.getElementById('res_tp102_tp101_vin').value.trim();
-      const res_tp103_tp101_5v          = document.getElementById('res_tp103_tp101_5v').value.trim();
-      const res_tp201_tp101_vbus        = document.getElementById('res_tp201_tp101_vbus').value.trim();
-      const res_tp202_tp101_v3          = document.getElementById('res_tp202_tp101_v3').value.trim();
-      const res_j103pin2_tp101_ctrl_vcc = document.getElementById('res_j103pin2_tp101_ctrl_vcc').value.trim();
-      const unpowered_pass_fail         = document.getElementById('unpowered_pass_fail').value;
-      const unpowered_notes             = document.getElementById('unpowered_notes').value.trim();
+    const payload = { board, test_run, unpowered, powered };
 
-      // --- POWERED FIELDS ---
-      const supply_current_ma      = numOrNull('supply_current_ma');
-      const vin_tp102_v           = numOrNull('vin_tp102_v');
-      const v5_tp103_v            = numOrNull('v5_tp103_v');
-      const v5_esp32_u103_v       = numOrNull('v5_esp32_u103_v');
-      const v3p3_tab_u103_v       = numOrNull('v3p3_tab_u103_v');
-      const v3_tp202_u501_v       = numOrNull('v3_tp202_u501_v');
-      const v3v3_ctrl_d103k_v     = numOrNull('v3v3_ctrl_d103k_v');
-      const vcclcd_tp401_v        = numOrNull('vcclcd_tp401_v');
-      const v5_dfp_c505_v         = numOrNull('v5_dfp_c505_v');
-      const v_charge_pump_plus_v  = numOrNull('v_charge_pump_plus_v');
-      const v_charge_pump_minus_v = numOrNull('v_charge_pump_minus_v');
-      const powered_pass_fail     = document.getElementById('powered_pass_fail').value;
-      const powered_notes         = document.getElementById('powered_notes').value.trim();
+    try {
+      const resp = await fetch(`${API_BASE}/api/test-run`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
 
-      const payload = {
-        board: {
-          serial_number,
-          hardware_rev,
-          pcb_rev,
-          batch,
-          country,
-          lab,
-          date_assembled,
-          assembled_by,
-          gdt_key,
-          gdt_url
-        },
-        test_run: {
-          test_location,
-          tester,
-          firmware_version,
-          test_fixture_version,
-          overall_result,
-          comments
-        },
-        unpowered: {
-          meter_make,
-          meter_model,
-          meter_sn,
-          res_tp102_tp101_vin,
-          res_tp103_tp101_5v,
-          res_tp201_tp101_vbus,
-          res_tp202_tp101_v3,
-          res_j103pin2_tp101_ctrl_vcc,
-          pass_fail: unpowered_pass_fail,
-          notes: unpowered_notes
-        },
-        powered: {
-          supply_current_ma,
-          vin_tp102_v,
-          v5_tp103_v,
-          v5_esp32_u103_v,
-          v3p3_tab_u103_v,
-          v3_tp202_u501_v,
-          v3v3_ctrl_d103k_v,
-          vcclcd_tp401_v,
-          v5_dfp_c505_v,
-          v_charge_pump_plus_v,
-          v_charge_pump_minus_v,
-          pass_fail: powered_pass_fail,
-          notes: powered_notes
-        }
-      };
-
-      try {
-        const res = await fetch(`${API_BASE}/api/test-run`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-
-        if (!res.ok) {
-          const text = await res.text();
-          throw new Error(`HTTP ${res.status}: ${text}`);
-        }
-
-        const data = await res.json().catch(() => ({}));
-        statusEl.textContent = data.message || `✅ Saved test run for board ${serial_number}`;
-        form.reset();
-      } catch (err) {
-        console.error(err);
-        statusEl.textContent = 'Error saving data: ' + err.message;
+      if (!resp.ok) {
+        const text = await resp.text();
+        throw new Error(`Server error: ${resp.status} – ${text}`);
       }
-    });
-  </script>
+
+      const data = await resp.json();
+      statusMsg.textContent = `Saved. Board ID: ${data.board_id}, Run ID: ${data.testrun_id}`;
+      statusMsg.style.color = '#2e7d32';
+      form.reset();
+    } catch (err) {
+      console.error(err);
+      statusMsg.textContent = `Error: ${err.message}`;
+      statusMsg.style.color = '#c62828';
+    }
+  });
+</script>
 </body>
 </html>

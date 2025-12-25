@@ -2,283 +2,159 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Krake – Inventory</title>
+  <title>Krake – Inventory & History</title>
   <link rel="stylesheet" href="style.css">
-  <style>
-    .records-container {
-      max-width: 960px;
-      margin: 0 auto 2rem;
-      padding: 1.5rem 2rem;
-      background: #ffffff;
-      border-radius: 10px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-    }
-
-    .records-header {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1rem;
-    }
-
-    .filters {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      align-items: center;
-    }
-
-    .filters label {
-      font-size: 0.8rem;
-      color: #4b5563;
-    }
-
-    .filters input,
-    .filters select {
-      font-size: 0.85rem;
-      padding: 0.25rem 0.4rem;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.85rem;
-      margin-top: 0.5rem;
-    }
-
-    th, td {
-      padding: 0.5rem 0.6rem;
-      text-align: left;
-      border-bottom: 1px solid #e5e7eb;
-    }
-
-    th {
-      font-weight: 600;
-      font-size: 0.8rem;
-      color: #4b5563;
-      background: #f9fafb;
-    }
-
-    tbody tr:hover {
-      background: #f3f4ff;
-    }
-
-    .status-text {
-      margin-top: 0.5rem;
-      font-size: 0.8rem;
-    }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0.1rem 0.4rem;
-      border-radius: 999px;
-      font-size: 0.7rem;
-      font-weight: 600;
-    }
-
-    .badge-pass {
-      background: #ecfdf5;
-      color: #166534;
-    }
-
-    .badge-fail {
-      background: #fef2f2;
-      color: #b91c1c;
-    }
-
-    .badge-rework {
-      background: #fffbeb;
-      color: #92400e;
-    }
-  </style>
 </head>
 <body>
   <nav class="top-nav">
     <a href="factory-form.html" class="nav-btn">Krake Testing Register</a>
-    <a href="records.html" class="nav-btn active" aria-current="page">Inventory</a>
-    <a href="board.html" class="nav-btn">Board Record</a>
+    <a href="records.html" class="nav-btn active">Inventory &amp; History</a>
+    <a href="labels.html" class="nav-btn">QR Label from Image</a>
   </nav>
 
-  <main class="records-container">
+  <div class="records-container">
     <header class="records-header">
-      <div>
-        <h1 style="margin:0; font-size:1.1rem; color:#111827;">Krake Inventory</h1>
-        <p style="margin:0.15rem 0 0; font-size:0.8rem; color:#6b7280;">
-          Latest test runs by board, location, tester and result.
-        </p>
+      <h1>Krake Inventory &amp; Test History</h1>
+      <div class="records-controls">
+        <label>
+          Filter by Serial:
+          <input type="text" id="filterSerial" placeholder="e.g. KRK-LB-001">
+        </label>
+        <label>
+          Filter by Country:
+          <input type="text" id="filterCountry" placeholder="e.g. Lebanon">
+        </label>
+        <button id="reloadBtn" class="btn-primary">Reload</button>
+        <button id="exportCsvBtn" class="btn-secondary">Export to Excel (CSV)</button>
       </div>
-      <button id="reload-btn" type="button">Reload</button>
-      <button id="reloadBtn" class="btn-primary">Reload</button>
-      <button id="exportCsvBtn" class="btn-secondary">Export to Excel (CSV)</button>
-
     </header>
 
-    <section class="filters">
-      <label>
-        Serial:
-        <input type="text" id="filter-serial" placeholder="LB0001…">
-      </label>
-
-      <label>
-        Location:
-        <select id="filter-location">
-          <option value="">All</option>
-          <option value="Lebanon">Lebanon</option>
-          <option value="UK">UK</option>
-          <option value="US">US</option>
-        </select>
-      </label>
-
-      <label>
-        Result:
-        <select id="filter-result">
-          <option value="">All</option>
-          <option value="PASS">PASS</option>
-          <option value="FAIL">FAIL</option>
-          <option value="REWORK">REWORK</option>
-        </select>
-      </label>
-    </section>
-
-    <table>
+    <table class="records-table">
       <thead>
         <tr>
           <th>Serial</th>
-          <th>Country / Lab</th>
-          <th>Test Date</th>
+          <th>Country</th>
+          <th>Lab</th>
+          <th>Test Datetime</th>
           <th>Location</th>
           <th>Tester</th>
           <th>Firmware</th>
           <th>Result</th>
         </tr>
       </thead>
-      <tbody id="records-body">
-        <!-- rows inserted by JS -->
+      <tbody id="recordsBody">
+        <!-- Filled by JS -->
       </tbody>
     </table>
 
-    <p id="status" class="status-text"></p>
-  </main>
+    <p id="recordCount" class="record-count">0 runs</p>
+  </div>
 
-  <script>
-    const API_BASE = '';
+<script>
+  const API_BASE = ''; // same origin
 
-    const tbody = document.getElementById('records-body');
-    const statusEl = document.getElementById('status');
-    const filterSerial = document.getElementById('filter-serial');
-    const filterLocation = document.getElementById('filter-location');
-    const filterResult = document.getElementById('filter-result');
-    const reloadBtn = document.getElementById('reload-btn');
+  const recordsBody = document.getElementById('recordsBody');
+  const recordCount = document.getElementById('recordCount');
+  const filterSerial = document.getElementById('filterSerial');
+  const filterCountry = document.getElementById('filterCountry');
+  const reloadBtn = document.getElementById('reloadBtn');
 
-    let lastData = [];
-
-    function setStatus(message, isError = false) {
-      statusEl.textContent = message || '';
-      statusEl.style.color = isError ? '#b91c1c' : '#14532d';
-    }
-
-    function formatDateTime(isoString) {
-      if (!isoString) return '';
-      const d = new Date(isoString);
-      if (isNaN(d)) return isoString;
-      return d.toLocaleString();
-    }
-
-    function resultBadge(result) {
-      if (!result) return '';
-      const val = result.toUpperCase();
-      let cls = 'badge';
-      if (val === 'PASS') cls += ' badge-pass';
-      else if (val === 'FAIL') cls += ' badge-fail';
-      else cls += ' badge-rework';
-      return `<span class="${cls}">${val}</span>`;
-    }
-
-    function renderTable() {
-      const serialFilter = filterSerial.value.trim().toLowerCase();
-      const locFilter = filterLocation.value;
-      const resultFilter = filterResult.value;
-
-      const filtered = lastData.filter(row => {
-        const serial = (row.serial_number || '').toLowerCase();
-        const location = row.test_location || '';
-        const result = row.overall_result || '';
-
-        if (serialFilter && !serial.includes(serialFilter)) return false;
-        if (locFilter && location !== locFilter) return false;
-        if (resultFilter && result !== resultFilter) return false;
-        return true;
-      });
-
-      tbody.innerHTML = '';
-
-      if (!filtered.length) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="7" style="text-align:center; color:#6b7280; font-size:0.8rem;">
-              No records match the current filters.
-            </td>
-          </tr>
-        `;
-        return;
+  async function loadTestRuns() {
+    recordsBody.innerHTML = '<tr><td colspan="8">Loading...</td></tr>';
+    try {
+      const resp = await fetch(`${API_BASE}/api/test-runs`);
+      if (!resp.ok) {
+        throw new Error(`Server error: ${resp.status}`);
       }
+      const data = await resp.json();
+      renderTable(data);
+    } catch (err) {
+      console.error(err);
+      recordsBody.innerHTML = `<tr><td colspan="8">Error: ${err.message}</td></tr>`;
+      recordCount.textContent = '0 runs';
+    }
+  }
 
-      for (const row of filtered) {
-        const tr = document.createElement('tr');
+  function renderTable(rows) {
+    const sFilter = filterSerial.value.trim().toLowerCase();
+    const cFilter = filterCountry.value.trim().toLowerCase();
 
-        const locCombined = [
-          row.country || '',
-          row.lab || ''
-        ].filter(Boolean).join(' / ');
+    const filtered = rows.filter(r => {
+      const matchesSerial = sFilter
+        ? (r.serial_number || '').toLowerCase().includes(sFilter)
+        : true;
+      const matchesCountry = cFilter
+        ? (r.country || '').toLowerCase().includes(cFilter)
+        : true;
+      return matchesSerial && matchesCountry;
+    });
 
-        tr.innerHTML = `
-          <td>${row.serial_number || ''}</td>
-          <td>${locCombined}</td>
-          <td>${formatDateTime(row.test_datetime)}</td>
-          <td>${row.test_location || ''}</td>
-          <td>${row.tester || ''}</td>
-          <td>${row.firmware_version || ''}</td>
-          <td>${resultBadge(row.overall_result)}</td>
-        `;
-        tbody.appendChild(tr);
-      }
+    if (!filtered.length) {
+      recordsBody.innerHTML = '<tr><td colspan="8">No records found</td></tr>';
+      recordCount.textContent = '0 runs';
+      return;
     }
 
-    async function loadRecords() {
-      setStatus('Loading records…', false);
-      try {
-        const res = await fetch(`${API_BASE}/api/test-runs`);
-        if (!res.ok) {
-          const text = await res.text();
-          throw new Error(`HTTP ${res.status}: ${text}`);
-        }
-        const data = await res.json();
-        lastData = Array.isArray(data) ? data : [];
-        renderTable();
-        setStatus(`Loaded ${lastData.length} record(s).`, false);
-      } catch (err) {
-        console.error(err);
-        setStatus('Error loading records: ' + err.message, true);
-      }
+    recordsBody.innerHTML = '';
+    for (const row of filtered) {
+      const tr = document.createElement('tr');
+
+      const serialCell = document.createElement('td');
+      const link = document.createElement('a');
+      link.href = `board.html?serial=${encodeURIComponent(row.serial_number)}`;
+      link.textContent = row.serial_number || '(unknown)';
+      serialCell.appendChild(link);
+      tr.appendChild(serialCell);
+
+      const countryCell = document.createElement('td');
+      countryCell.textContent = row.country || '';
+      tr.appendChild(countryCell);
+
+      const labCell = document.createElement('td');
+      labCell.textContent = row.lab || '';
+      tr.appendChild(labCell);
+
+      const dtCell = document.createElement('td');
+      dtCell.textContent = row.test_datetime
+        ? new Date(row.test_datetime).toLocaleString()
+        : '';
+      tr.appendChild(dtCell);
+
+      const locCell = document.createElement('td');
+      locCell.textContent = row.test_location || '';
+      tr.appendChild(locCell);
+
+      const testerCell = document.createElement('td');
+      testerCell.textContent = row.tester || '';
+      tr.appendChild(testerCell);
+
+      const fwCell = document.createElement('td');
+      fwCell.textContent = row.firmware_version || '';
+      tr.appendChild(fwCell);
+
+      const resultCell = document.createElement('td');
+      resultCell.textContent = row.overall_result || '';
+      resultCell.className =
+        row.overall_result === 'PASS' ? 'result-pass'
+        : row.overall_result === 'FAIL' ? 'result-fail'
+        : 'result-other';
+      tr.appendChild(resultCell);
+
+      recordsBody.appendChild(tr);
     }
 
-    reloadBtn.addEventListener('click', loadRecords);
-    filterSerial.addEventListener('input', renderTable);
-    filterLocation.addEventListener('change', renderTable);
-    filterResult.addEventListener('change', renderTable);
+    recordCount.textContent = `${filtered.length} run(s)`;
+  }
 
-    // Initial load
-    loadRecords();
+  reloadBtn.addEventListener('click', loadTestRuns);
+  filterSerial.addEventListener('input', loadTestRuns);
+  filterCountry.addEventListener('input', loadTestRuns);
 
-    document.getElementById('exportCsvBtn').addEventListener('click', () => {
-    // Trigger file download from the CSV endpoint
+  document.getElementById('exportCsvBtn').addEventListener('click', () => {
     window.location.href = `${API_BASE}/api/test-runs.csv`;
   });
 
-  </script>
+  loadTestRuns();
+</script>
 </body>
 </html>

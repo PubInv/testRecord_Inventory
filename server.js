@@ -6,6 +6,8 @@ const mysql = require('mysql2/promise');
 
 const multer = require('multer');
 const PDFDocument = require('pdfkit');
+
+// memory storage for on-the-fly QR → PDF endpoint
 const upload = multer({ storage: multer.memoryStorage() });
  
 // ---------- EXPRESS SETUP ----------
@@ -13,32 +15,21 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Serve static HTML/CSS from ./public
 app.use(express.static('public'));
 
 // ---------- MySQL CONFIG ----------
-// const pool = mysql.createPool({
-//   host: process.env.DB_HOST || '127.0.0.1',
-//   port: 3306,
-//   user: process.env.DB_USER || 'root',
-//   password: process.env.DB_PASS || 'N@jh@M..2429',  // keep, but override in prod
-//   database: process.env.DB_NAME || 'krake_factory',
-//   waitForConnections: true,
-//   connectionLimit: 10,
-//   queueLimit: 0
-// });
-
+// Use env vars in production. On EC2, these come from systemd Environment.
 const pool = mysql.createPool({
   host: process.env.DB_HOST || '127.0.0.1',
   port: 3306,
-  user: process.env.DB_USER,          // no hard-coded default
-  password: process.env.DB_PASS,      // no hard-coded default
+  user: process.env.DB_USER,          // e.g. krake_user
+  password: process.env.DB_PASS,      // e.g. NewStrongPassword!2025
   database: process.env.DB_NAME || 'krake_factory',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
 });
-
-
 
 async function getConn() {
   return pool.getConnection();
@@ -434,10 +425,6 @@ app.post('/api/labels/qr-image-pdf', upload.single('qr_image'), async (req, res)
 });
 
 // ---------- START SERVER ----------
-// const PORT = 4000;
-// app.listen(PORT, () => {
-//   console.log(`API server listening on http://0.0.0.0:${PORT}`);
-// });
 const PORT = 4000;
 app.listen(PORT, '127.0.0.1', () => {
   console.log(`API server listening on http://127.0.0.1:${PORT}`);
