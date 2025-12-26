@@ -234,51 +234,69 @@ app.get('/api/test-runs', async (req, res) => {
 
 // GET /api/test-runs.csv – export inventory as CSV (Excel-friendly)
 // GET /api/test-runs – one row per board (latest run) for inventory page
-app.get('/api/test-runs', async (req, res) => {
+// GET /api/test-runs.csv – export inventory as CSV (Excel-friendly)
+app.get('/api/test-runs.csv', async (req, res) => {
   let conn;
   try {
     conn = await getConn();
     const [rows] = await conn.query(
-      `
-      SELECT
-        t.serial_number,
-        t.country,
-        t.lab,
-        t.status,
-        t.hardware_rev,
-        t.test_datetime,
-        t.test_location,
-        t.tester,
-        t.firmware_version,
-        t.overall_result
-      FROM (
-        SELECT
-          b.board_id,
-          b.serial_number,
-          b.country,
-          b.lab,
-          b.status,
-          b.hardware_rev,
-          tr.test_datetime,
-          tr.test_location,
-          tr.tester,
-          tr.firmware_version,
-          tr.overall_result,
-          ROW_NUMBER() OVER (
-            PARTITION BY b.board_id
-            ORDER BY tr.test_datetime DESC
-          ) AS rn
-        FROM test_runs tr
-        JOIN boards b ON tr.board_id = b.board_id
-      ) AS t
-      WHERE t.rn = 1
-      ORDER BY t.test_datetime DESC;
-      `
+      `SELECT
+         b.serial_number,
+         b.country,
+         b.lab,
+         tr.test_datetime,
+         tr.test_location,
+         tr.tester,
+         tr.firmware_version,
+         tr.overall_result
+       FROM test_runs tr
+       JOIN boards b ON tr.board_id = b.board_id
+       ORDER BY tr.test_datetime DESC`
     );
-    res.json(rows);
+
+    // Tell browser: this is a CSV file, please download it
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="krake_inventory_export.csv"'
+    );
+
+    const headerCols = [
+      'serial_number',
+      'country',
+      'lab',
+      'test_datetime',
+      'test_location',
+      'tester',
+      'firmware_version',
+      'overall_result'
+    ];
+    const header = headerCols.join(',') + '\n';
+
+    const escapeCsv = (value) => {
+      if (value === null || value === undefined) return '';
+      const s = String(value).replace(/"/g, '""');
+      // Wrap in quotes if contains comma, quote, or newline
+      return /[",\n]/.test(s) ? `"${s}"` : s;
+    };
+
+    const lines = rows.map((row) =>
+      [
+        escapeCsv(row.serial_number),
+        escapeCsv(row.country),
+        escapeCsv(row.lab),
+        escapeCsv(row.test_datetime),
+        escapeCsv(row.test_location),
+        escapeCsv(row.tester),
+        escapeCsv(row.firmware_version),
+        escapeCsv(row.overall_result)
+      ].join(',')
+    );
+
+    res.send(header + lines.join('\n'));
   } catch (err) {
-    console.error('GET /api/test-runs error:', err);
-    res.status(500).json({ error: err.message });
+    console.error('GET /api/test-runs.csv error:', err);
+    res.status(500).send('Error exporting CSV');
   } finally {
     if (conn) conn.release();
   }
