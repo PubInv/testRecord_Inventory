@@ -34,8 +34,10 @@
       <thead>
         <tr>
           <th>Serial</th>
+          <th>Status</th>
           <th>Country</th>
           <th>Lab</th>
+          <th>HW Rev</th>
           <th>Test Datetime</th>
           <th>Location</th>
           <th>Tester</th>
@@ -48,7 +50,7 @@
       </tbody>
     </table>
 
-    <p id="recordCount" class="record-count">0 runs</p>
+    <p id="recordCount" class="record-count">0 boards</p>
   </div>
 
 <script>
@@ -61,7 +63,7 @@
   const reloadBtn = document.getElementById('reloadBtn');
 
   async function loadTestRuns() {
-    recordsBody.innerHTML = '<tr><td colspan="8">Loading...</td></tr>';
+    recordsBody.innerHTML = '<tr><td colspan="10">Loading...</td></tr>';
     try {
       const resp = await fetch(`${API_BASE}/api/test-runs`);
       if (!resp.ok) {
@@ -71,8 +73,8 @@
       renderTable(data);
     } catch (err) {
       console.error(err);
-      recordsBody.innerHTML = `<tr><td colspan="8">Error: ${err.message}</td></tr>`;
-      recordCount.textContent = '0 runs';
+      recordsBody.innerHTML = `<tr><td colspan="10">Error: ${err.message}</td></tr>`;
+      recordCount.textContent = '0 boards';
     }
   }
 
@@ -80,6 +82,7 @@
     const sFilter = filterSerial.value.trim().toLowerCase();
     const cFilter = filterCountry.value.trim().toLowerCase();
 
+    // Filter by serial + country
     const filtered = rows.filter(r => {
       const matchesSerial = sFilter
         ? (r.serial_number || '').toLowerCase().includes(sFilter)
@@ -91,8 +94,8 @@
     });
 
     if (!filtered.length) {
-      recordsBody.innerHTML = '<tr><td colspan="8">No records found</td></tr>';
-      recordCount.textContent = '0 runs';
+      recordsBody.innerHTML = '<tr><td colspan="10">No records found</td></tr>';
+      recordCount.textContent = '0 boards';
       return;
     }
 
@@ -100,6 +103,7 @@
     for (const row of filtered) {
       const tr = document.createElement('tr');
 
+      // Serial → link to board page
       const serialCell = document.createElement('td');
       const link = document.createElement('a');
       link.href = `board.html?serial=${encodeURIComponent(row.serial_number)}`;
@@ -107,44 +111,62 @@
       serialCell.appendChild(link);
       tr.appendChild(serialCell);
 
+      // Status
+      const statusCell = document.createElement('td');
+      statusCell.textContent = row.status || '';
+      tr.appendChild(statusCell);
+
+      // Country
       const countryCell = document.createElement('td');
       countryCell.textContent = row.country || '';
       tr.appendChild(countryCell);
 
+      // Lab
       const labCell = document.createElement('td');
       labCell.textContent = row.lab || '';
       tr.appendChild(labCell);
 
+      // HW Rev
+      const hwCell = document.createElement('td');
+      hwCell.textContent = row.hardware_rev || '';
+      tr.appendChild(hwCell);
+
+      // Test datetime (latest run)
       const dtCell = document.createElement('td');
       dtCell.textContent = row.test_datetime
         ? new Date(row.test_datetime).toLocaleString()
         : '';
       tr.appendChild(dtCell);
 
+      // Location
       const locCell = document.createElement('td');
       locCell.textContent = row.test_location || '';
       tr.appendChild(locCell);
 
+      // Tester
       const testerCell = document.createElement('td');
       testerCell.textContent = row.tester || '';
       tr.appendChild(testerCell);
 
+      // Firmware
       const fwCell = document.createElement('td');
       fwCell.textContent = row.firmware_version || '';
       tr.appendChild(fwCell);
 
+      // Result
       const resultCell = document.createElement('td');
-      resultCell.textContent = row.overall_result || '';
+      const res = row.overall_result || '';
+      resultCell.textContent = res;
       resultCell.className =
-        row.overall_result === 'PASS' ? 'result-pass'
-        : row.overall_result === 'FAIL' ? 'result-fail'
+        res === 'PASS' ? 'result-pass'
+        : res === 'FAIL' ? 'result-fail'
         : 'result-other';
       tr.appendChild(resultCell);
 
       recordsBody.appendChild(tr);
     }
 
-    recordCount.textContent = `${filtered.length} run(s)`;
+    recordCount.textContent = `${filtered.length} board(s)`;
   }
 
   reloadBtn.addEventListener('click', loadTestRuns);
